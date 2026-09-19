@@ -351,12 +351,14 @@
                   <div class="flex flex-col items-start gap-1">
                     <span class="text-xs font-mono text-slate-500">{{ l.waNumber || '-' }}</span>
                     <span :class="statusClass(l.waStatus)" class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tight border">{{ l.waStatus }}</span>
+                    <span v-if="l.waError" class="max-w-[220px] truncate text-[11px] text-rose-600" :title="l.waError">{{ l.waError }}</span>
                   </div>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex flex-col items-start gap-1">
                     <span class="text-xs text-slate-500">{{ l.email || '-' }}</span>
                     <span :class="statusClass(l.emailStatus)" class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tight border">{{ l.emailStatus }}</span>
+                    <span v-if="l.emailError" class="max-w-[220px] truncate text-[11px] text-rose-600" :title="l.emailError">{{ l.emailError }}</span>
                   </div>
                 </td>
               </tr>
@@ -618,10 +620,22 @@ const runNow = async (id: number) => {
   blasting.value = id;
   try {
     const result = await store.dispatch(RUN_BROADCAST, id) as BroadcastRunResponse;
+    const runLogs = result?.logs || [];
+    const waSent = runLogs.filter((log) => log.waStatus === 'sent').length;
+    const waFailed = runLogs.filter((log) => log.waStatus === 'failed').length;
+    const emailSent = runLogs.filter((log) => log.emailStatus === 'sent').length;
+    const emailFailed = runLogs.filter((log) => log.emailStatus === 'failed').length;
     Swal.fire({
-      title: 'Berhasil', 
-      text: `${result?.sent ?? 0} pesan dikirim.`, 
-      icon: 'success',
+      title: waFailed || emailFailed ? 'Blast selesai dengan catatan' : 'Blast berhasil',
+      html: `
+        <div style="text-align:left;line-height:1.7">
+          <div>WhatsApp terkirim: <strong>${waSent}</strong></div>
+          <div>WhatsApp gagal: <strong>${waFailed}</strong></div>
+          <div>Email terkirim: <strong>${emailSent}</strong></div>
+          <div>Email gagal: <strong>${emailFailed}</strong></div>
+        </div>
+      `,
+      icon: waFailed || emailFailed ? 'warning' : 'success',
       confirmButtonColor: '#003793',
     });
     await store.dispatch(GET_BROADCAST_SETTINGS);

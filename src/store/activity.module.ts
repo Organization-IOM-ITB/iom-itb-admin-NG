@@ -11,11 +11,22 @@ export const DELETE_ACTIVITY = "deleteActivity";
 export const PUBLISH_ACTIVITY = "publishActivity";
 export const GET_ACTIVITY_COUNTS = "getActivityCounts";
 export const GET_TAGS = "getTags";
+export const GET_CONTRIBUTORS = "getContributors";
 
 
 interface Tag {
   id: number;
   name: string;
+}
+
+interface ContributorSuggestion {
+  name: string;
+}
+
+interface BaseResponse<T> {
+  status: number;
+  message: string;
+  data: T;
 }
 
 interface Activity {
@@ -116,6 +127,14 @@ const actions = {
     return new Promise((resolve, reject) => {
       ApiService.get<any>('/activities/tags', params)
         .then(response => resolve(response)) 
+        .catch(err => reject(err));
+    });
+  },
+
+  [GET_CONTRIBUTORS](_context: VuexContext, params?: { search?: string; limit?: number }): Promise<BaseResponse<ContributorSuggestion[]>> {
+    return new Promise((resolve, reject) => {
+      ApiService.get<BaseResponse<ContributorSuggestion[]>>('/activities/admin/contributors', params)
+        .then(response => resolve(response))
         .catch(err => reject(err));
     });
   },

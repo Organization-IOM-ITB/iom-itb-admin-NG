@@ -35,9 +35,9 @@
               <div class="grid grid-cols-1 gap-3 px-5 py-3 md:grid-cols-[170px_1fr] md:items-center">
                 <div>
                   <label class="text-sm font-semibold text-slate-900">Stok & Harga <span class="text-red-500">*</span></label>
-                  <p class="mt-0.5 text-xs text-slate-400">Jumlah stok dan harga jual produk.</p>
+                  <p class="mt-0.5 text-xs text-slate-400">Jumlah stok, harga jual, dan HPP internal.</p>
                 </div>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <input
                     v-model="formData.data.stock"
                     type="number"
@@ -54,6 +54,14 @@
                     class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8c8c94]/20"
                     placeholder="Rp 0"
                     @input="onPriceInput"
+                  />
+                  <input
+                    :value="formatCurrencyInput(formData.data.hpp)"
+                    type="text"
+                    inputmode="numeric"
+                    class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8c8c94]/20"
+                    placeholder="HPP Rp 0"
+                    @input="onHppInput"
                   />
                 </div>
               </div>
@@ -111,7 +119,7 @@
               <div class="grid grid-cols-1 gap-3 px-5 py-3 md:grid-cols-[170px_1fr] md:items-start">
                 <div class="md:pt-2">
                   <label class="text-sm font-semibold text-slate-900">Gambar Produk</label>
-                  <p class="mt-0.5 text-xs text-slate-400">Masukkan URL gambar atau unggah file baru.</p>
+                  <p class="mt-0.5 text-xs text-slate-400">Masukkan URL gambar atau unggah JPG/PNG maksimal 5 MB.</p>
                 </div>
                 <div class="space-y-3">
                   <div class="flex flex-wrap gap-2">
@@ -137,10 +145,11 @@
                   <input
                     v-else
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png"
                     class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                     @change="onImageFileChange"
                   />
+                  <p v-if="imageMode === 'upload'" class="text-xs text-slate-400">Format JPG/PNG, maksimal 5 MB.</p>
 
                   <div v-if="imagePreview" class="flex items-center gap-3">
                     <img :src="imagePreview" alt="Preview produk" class="h-16 w-16 rounded-lg border border-slate-200 object-cover" />
@@ -178,6 +187,10 @@ import AppSelect from '@/components/input/AppSelect.vue';
 import type { ApiDataResponse, ApiErrorResponse, MerchandisePayload } from '@/types/domain';
 
 type CategoryResponse = ApiDataResponse<string[]> | string[];
+
+const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png']);
 
 export default defineComponent({
   components: {
@@ -269,6 +282,13 @@ export default defineComponent({
       input.value = formatCurrencyInput(formData.data.price);
     };
 
+    const onHppInput = (event: Event) => {
+      const input = event.target as HTMLInputElement;
+      const rawValue = input.value.replace(/\D/g, '');
+      formData.data.hpp = rawValue ? Number(rawValue) : '';
+      input.value = formatCurrencyInput(formData.data.hpp);
+    };
+
     const onImageUrlInput = () => {
       formData.data.image = imageUrl.value;
       imagePreview.value = imageUrl.value;
@@ -278,6 +298,18 @@ export default defineComponent({
       const input = event.target as HTMLInputElement;
       const file = input.files?.[0];
       if (!file) return;
+
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        input.value = '';
+        showError('Gambar tidak valid', 'Format gambar harus JPG atau PNG.');
+        return;
+      }
+
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        input.value = '';
+        showError('Gambar terlalu besar', `Ukuran gambar maksimal ${MAX_IMAGE_SIZE_MB} MB.`);
+        return;
+      }
 
       formData.data.image = file;
       const reader = new FileReader();
@@ -319,6 +351,15 @@ export default defineComponent({
         } else if (!Number.isInteger(stockValue)) {
           errors.push('Stok harus berupa bilangan bulat (tidak boleh menggunakan koma).');
         }
+      }
+
+      const hppValue = Number(formData.data.hpp || 0);
+      if (formData.data.hpp !== undefined && formData.data.hpp !== '') {
+        if (!Number.isFinite(hppValue) || hppValue < 0) {
+          errors.push('HPP tidak boleh bernilai negatif.');
+        }
+      } else {
+        formData.data.hpp = 0;
       }
 
       const link = typeof formData.data.link === 'string' ? formData.data.link : '';
@@ -380,6 +421,7 @@ export default defineComponent({
       imagePreview,
       formatCurrencyInput,
       onPriceInput,
+      onHppInput,
       onImageUrlInput,
       onImageFileChange,
       removeImage,

@@ -161,3 +161,94 @@ Project ini dikembangkan untuk IOM ITB. Semua hak cipta dilindungi.
 ## Support
 
 Untuk pertanyaan atau dukungan teknis, silakan hubungi tim development IOM ITB.
+
+## Laporan Pengujian Fitur Halaman Fakultas (Admin)
+
+Halaman: Menu **Fakultas** -> `/fakultas` -> `FakultasView.vue`
+
+Catatan: Halaman ini digunakan untuk mengelola master data fakultas dan kode unik 3 digit yang dipakai sebagai referensi pada fitur donasi/iuran.
+
+### A. Tujuan Pengujian
+
+Memastikan fitur CRUD pada halaman Fakultas di sisi admin berjalan sesuai fungsionalitas yang diharapkan, termasuk validasi input, penanganan error, filter data, dan konsistensi data antara frontend dan backend.
+
+### B. Rencana Pengujian
+
+| Aspek | Detail |
+| --- | --- |
+| Modul yang diuji | Halaman Fakultas Admin (`/fakultas`) |
+| Jenis pengujian | Pengujian Fungsional (Functional Testing) |
+| Metode | Black-box testing, yaitu pengujian dilakukan berdasarkan input/output tanpa melihat implementasi internal |
+| Cakupan | Create, Read, Update, Delete (CRUD), pencarian, filter status, validasi form, dan edge case tiap operasi |
+| Lingkungan | Local development dengan frontend Vue.js, backend Express.js, dan database MySQL |
+| Data uji | Data fakultas dummy yang dibuat selama sesi pengujian, misalnya nama fakultas, kode unik 3 digit, dan status aktif/nonaktif |
+
+### C. Pengujian Otomatis
+
+Pengujian dilaksanakan secara otomatis dengan menjalankan script yang mengeksekusi setiap skenario pengujian secara berurutan. Script pengujian mencakup simulasi interaksi pengguna terhadap fitur CRUD halaman Fakultas. Setiap hasil pengujian dicatat berdasarkan respons yang diterima dari frontend maupun backend.
+
+### D. Kasus dan Hasil Pengujian
+
+#### 1. Read
+
+| Case | Status |
+| --- | --- |
+| Data fakultas tampil dalam bentuk tabel | Pass |
+| Kolom Nama Fakultas, Kode Unik, Status, dan Aksi tampil sesuai | Pass |
+| KPI Total Fakultas tampil sesuai jumlah data | Pass |
+| KPI Aktif tampil sesuai jumlah fakultas aktif | Pass |
+| KPI Nonaktif tampil sesuai jumlah fakultas nonaktif | Pass |
+| Pencarian berdasarkan nama fakultas berfungsi | Pass |
+| Pencarian berdasarkan kode unik berfungsi | Pass |
+| Filter status Semua status berfungsi | Pass |
+| Filter status Aktif berfungsi | Pass |
+| Filter status Nonaktif berfungsi | Pass |
+| Label "Menampilkan X dari Y data" tampil sesuai hasil filter | Pass |
+| Data kosong menampilkan pesan "Belum ada data fakultas" | Pass |
+| Badge status Aktif/Nonaktif tampil sesuai nilai data | Pass |
+| Loading state skeleton tampil saat data sedang dimuat | Pass |
+
+#### 2. Create
+
+| Case | Status |
+| --- | --- |
+| Tombol "Tambah Fakultas" membuka modal form | Pass |
+| Field Nama Fakultas wajib diisi | Pass |
+| Field Kode Unik wajib diisi di form | Pass |
+| Field Kode Unik membatasi input maksimal 3 karakter | Pass |
+| Checkbox Status Aktif dapat dicentang/dimatikan | Pass |
+| Submit tanpa nama fakultas menampilkan error dari server | Pass |
+| Submit dengan data valid berhasil membuat fakultas baru | Pass |
+| Setelah submit berhasil, modal tertutup dan data ter-refresh | Pass |
+| Klik Batal menutup modal tanpa menyimpan data | Pass |
+| Klik di luar modal menutup modal tanpa menyimpan data | Pass |
+| Duplikasi nama fakultas/kode unik ditangani sebagai error backend/database | Pass |
+
+#### 3. Update
+
+| Case | Status |
+| --- | --- |
+| Tombol Edit membuka modal dengan data pre-filled | Pass |
+| Update nama fakultas berhasil tersimpan | Pass |
+| Update kode unik berhasil tersimpan | Pass |
+| Update status Aktif menjadi Nonaktif berhasil tersimpan | Pass |
+| Update status Nonaktif menjadi Aktif berhasil tersimpan | Pass |
+| Setelah update berhasil, modal tertutup dan data ter-refresh | Pass |
+| Submit update pada ID yang tidak ditemukan menampilkan error dari server | Pass |
+| Error backend saat update ditampilkan dalam dialog SweetAlert | Pass |
+| Klik Batal saat edit menutup modal tanpa menyimpan perubahan | Pass |
+
+#### 4. Delete
+
+| Case | Status |
+| --- | --- |
+| Tombol Hapus/Trash menampilkan konfirmasi SweetAlert | Pass |
+| Klik Batal pada dialog konfirmasi tidak menjalankan aksi delete | Pass |
+| Konfirmasi delete berhasil menghapus data fakultas | Pass |
+| Setelah delete berhasil, data tabel ter-refresh | Pass |
+| Delete pada ID yang tidak ditemukan menampilkan error dari server | Pass |
+| Error backend saat delete ditampilkan dalam dialog SweetAlert | Pass |
+
+### E. Kesimpulan
+
+Berdasarkan hasil pengujian, fitur halaman Fakultas Admin telah memenuhi kebutuhan utama CRUD dan filter data. Fitur dapat menampilkan daftar fakultas, menambahkan data baru, memperbarui data existing, menghapus data, serta menangani error dasar dari backend. Data fakultas yang dikelola pada halaman ini konsisten dengan endpoint backend `/faculties` dan dapat digunakan sebagai referensi pada fitur donasi/iuran.

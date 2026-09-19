@@ -141,6 +141,7 @@ export interface Merchandise {
   name?: string;
   stock?: number | string | null;
   price?: number | string | null;
+  hpp?: number | string | null;
   description?: string;
   image?: string | File | null;
   link?: string;

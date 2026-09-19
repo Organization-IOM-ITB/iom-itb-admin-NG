@@ -166,13 +166,33 @@
                 :key="index"
                 class="flex items-center gap-2"
               >
-                <input
-                  :value="contributor"
-                  @input="updateContributor(index, ($event.target as HTMLInputElement).value)"
-                  @blur="autoSave"
-                  placeholder="Nama kontributor..."
-                  class="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div class="relative flex-1">
+                  <input
+                    :value="contributor"
+                    @input="updateContributor(index, ($event.target as HTMLInputElement).value)"
+                    @focus="searchContributors(index)"
+                    @blur="closeContributorSuggestions"
+                    @keydown.down.prevent="highlightNextContributor"
+                    @keydown.up.prevent="highlightPrevContributor"
+                    @keydown.enter.prevent="selectHighlightedContributor(index)"
+                    placeholder="Nama kontributor..."
+                    class="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div
+                    v-if="activeContributorIndex === index && contributorSuggestions.length > 0"
+                    class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden"
+                  >
+                    <button
+                      v-for="(suggestion, suggestionIndex) in contributorSuggestions"
+                      :key="suggestion"
+                      @mousedown.prevent="selectContributor(index, suggestion)"
+                      :class="suggestionIndex === contributorHighlightedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'"
+                      class="w-full px-3 py-2 text-xs text-left transition-colors break-words"
+                    >
+                      {{ suggestion }}
+                    </button>
+                  </div>
+                </div>
                 <button
                   @click="removeContributor(index)"
                   class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
@@ -261,7 +281,7 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
-import { GET_ACTIVITY_BY_ID, PUT_ACTIVITY, POST_ACTIVITY, GET_TAGS } from '@/store/activity.module';
+import { GET_ACTIVITY_BY_ID, PUT_ACTIVITY, POST_ACTIVITY, GET_TAGS, GET_CONTRIBUTORS } from '@/store/activity.module';
 import { POST_ACTIVITY_IMAGE } from '@/store/upload.module';
 import Swal from 'sweetalert2';
 import RichTextEditor from '@/components/input/RichTextEditor.vue';
@@ -283,9 +303,13 @@ const thumbnailMode = ref<'upload' | 'url'>('url');
 const thumbnailUrlInput = ref('');
 const tagInput = ref('');
 const tagSuggestions = ref<string[]>([]);
+const contributorSuggestions = ref<string[]>([]);
+const activeContributorIndex = ref<number | null>(null);
 let tagSearchTimer: any = null;
+let contributorSearchTimer: any = null;
 
 const highlightedIndex = ref(-1);
+const contributorHighlightedIndex = ref(-1);
 
 const highlightNext = () => {
   if (tagSuggestions.value.length === 0) return;
@@ -334,6 +358,17 @@ const formatUpdatedAt = (dateStr: string) => {
   });
 };
 
+const getJakartaDateString = () => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const dateParts = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+};
+
 const handleTitleInput = () => {
   if (form.value.status !== 'published') {
     form.value.url = generateSlug(form.value.title);
@@ -357,7 +392,7 @@ const saveData = async () => {
     if (!activityId.value) {
       // Buat baru
       const result = await store.dispatch(POST_ACTIVITY, {
-        data: { ...form.value, date: new Date().toISOString().split('T')[0], status: 'draft' }
+        data: { ...form.value, date: getJakartaDateString(), status: 'draft' }
       });
       activityId.value = result.id;
       lastUpdated.value = formatUpdatedAt(result.updatedAt);
@@ -430,7 +465,6 @@ const publish = async () => {
       data: {
         ...form.value,
         status: 'published',
-        date: new Date().toISOString().split('T')[0],
         contributors: form.value.contributors.filter(c => c.trim()), // ✅ buang yang kosong
       }
     });
@@ -516,12 +550,10 @@ const searchTags = () => {
   tagSearchTimer = setTimeout(async () => {
     if (!tagInput.value.trim()) { tagSuggestions.value = []; return; }
     const results = await store.dispatch(GET_TAGS, { search: tagInput.value });
-    console.log('TAG RESULTS:', results); // ✅ tambah ini
     tagSuggestions.value = (results?.data?.data || results?.data || results || [])
       .map((t: any) => t.name)
       .filter((name: string) => !form.value.tags.includes(name))
       .slice(0, 3);
-    console.log('SUGGESTIONS:', tagSuggestions.value); // ✅ dan ini
   }, 300);
 };
 
@@ -547,19 +579,113 @@ const removeTag = (index: number) => {
   autoSave();
 };
 
+const normalizeContributorName = (name: string) => name.trim().replace(/\s+/g, ' ');
+
+type ContributorSuggestionItem = string | { name?: unknown };
+
+const isContributorSuggestionArray = (value: unknown): value is ContributorSuggestionItem[] => {
+  return Array.isArray(value);
+};
+
+const contributorNamesFromResponse = (results: unknown) => {
+  const root = results && typeof results === 'object' ? results as { data?: unknown } : {};
+  const nested = root.data && typeof root.data === 'object' ? root.data as { data?: unknown } : {};
+  const source = isContributorSuggestionArray(nested.data)
+    ? nested.data
+    : isContributorSuggestionArray(root.data)
+      ? root.data
+      : isContributorSuggestionArray(results)
+        ? results
+        : [];
+
+  return source
+    .map((item) => typeof item === 'string' ? item : item.name)
+    .filter((name): name is string => typeof name === 'string' && !!name.trim());
+};
+
+const clearContributorSuggestions = () => {
+  contributorSuggestions.value = [];
+  activeContributorIndex.value = null;
+  contributorHighlightedIndex.value = -1;
+};
+
+const closeContributorSuggestions = () => {
+  setTimeout(clearContributorSuggestions, 150);
+};
+
+const searchContributors = (index: number) => {
+  clearTimeout(contributorSearchTimer);
+  activeContributorIndex.value = index;
+  contributorHighlightedIndex.value = -1;
+
+  contributorSearchTimer = setTimeout(async () => {
+    const query = form.value.contributors[index]?.trim() || '';
+    if (!query) {
+      contributorSuggestions.value = [];
+      return;
+    }
+
+    const results = await store.dispatch(GET_CONTRIBUTORS, { search: query, limit: 5 });
+    const existingNames = new Set(
+      form.value.contributors
+        .filter((_, contributorIndex) => contributorIndex !== index)
+        .map(name => normalizeContributorName(name).toLowerCase())
+        .filter(Boolean)
+    );
+    const seenSuggestions = new Set<string>();
+
+    contributorSuggestions.value = contributorNamesFromResponse(results)
+      .map(normalizeContributorName)
+      .filter((name) => {
+        const key = name.toLowerCase();
+        if (!name || existingNames.has(key) || seenSuggestions.has(key)) return false;
+        seenSuggestions.add(key);
+        return true;
+      })
+      .slice(0, 5);
+  }, 250);
+};
+
+const highlightNextContributor = () => {
+  if (contributorSuggestions.value.length === 0) return;
+  contributorHighlightedIndex.value = (contributorHighlightedIndex.value + 1) % contributorSuggestions.value.length;
+};
+
+const highlightPrevContributor = () => {
+  if (contributorSuggestions.value.length === 0) return;
+  contributorHighlightedIndex.value = (contributorHighlightedIndex.value - 1 + contributorSuggestions.value.length) % contributorSuggestions.value.length;
+};
+
+const selectContributor = (index: number, name: string) => {
+  form.value.contributors[index] = normalizeContributorName(name);
+  clearContributorSuggestions();
+  autoSave();
+};
+
+const selectHighlightedContributor = (index: number) => {
+  if (contributorHighlightedIndex.value >= 0 && contributorSuggestions.value[contributorHighlightedIndex.value]) {
+    selectContributor(index, contributorSuggestions.value[contributorHighlightedIndex.value]);
+  } else {
+    clearContributorSuggestions();
+  }
+};
+
 const addContributor = () => {
   form.value.contributors.push('');
+  clearContributorSuggestions();
   autoSave();
 };
 
 const removeContributor = (index: number) => {
   form.value.contributors.splice(index, 1);
+  clearContributorSuggestions();
   autoSave();
 };
 
 const updateContributor = (index: number, value: string) => {
   form.value.contributors[index] = value;
   autoSave();
+  searchContributors(index);
 };
 
 onMounted(async () => {

@@ -44,7 +44,7 @@ type VuexContext = ActionContext<State, RootState>;
 const actions = {
     [GET_MERCHANDISES](context: VuexContext, params: ApiActionParams = {}): Promise<PaginatedData<Merchandise>> {
         return new Promise((resolve, reject) => {
-            ApiService.get<PaginatedData<Merchandise>>("/merchandises", params.data || {})
+            ApiService.get<PaginatedData<Merchandise>>("/merchandises/internal", params.data || {})
                 .then(response => {
                     context.commit(SET_MERCHANDISES, response);
                     resolve(response);
