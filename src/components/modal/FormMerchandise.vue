@@ -265,8 +265,14 @@ export default defineComponent({
       formData.data[params.key] = params.value;
     };
 
+    // formData.data.price/hpp berisi angka mentah dari state lokal (integer)
+    // ATAU string desimal langsung dari API (mis. "225000.00", karena kolom
+    // DECIMAL di MySQL diserialisasi sebagai string oleh Sequelize). Memakai
+    // replace(/\D/g, '') di sini akan ikut membuang titik desimalnya dan
+    // mengubah "225000.00" jadi 22500000 (dikali 100). Number() menangani
+    // kedua bentuk itu dengan benar.
     const formatCurrencyInput = (value: unknown) => {
-      const numberValue = Number(String(value || '').replace(/\D/g, ''));
+      const numberValue = Number(value);
       if (!numberValue) return '';
       return new Intl.NumberFormat('id-ID', {
         style: 'currency',
