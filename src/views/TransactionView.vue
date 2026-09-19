@@ -111,6 +111,7 @@
                 <th class="px-4 py-3.5 text-sm font-semibold text-left text-blue-100">Pesanan</th>
                 <th class="px-4 py-3.5 text-sm font-semibold text-left text-blue-100">Pembeli</th>
                 <th class="px-4 py-3.5 text-sm font-semibold text-left text-blue-100">Alamat</th>
+                <th class="px-4 py-3.5 text-sm font-semibold text-left text-blue-100">Catatan</th>
                 <th class="px-4 py-3.5 text-sm font-semibold text-right text-blue-100">Total</th>
                 <th class="px-4 py-3.5 text-sm font-semibold text-left text-blue-100">Pembayaran</th>
                 <th class="px-4 py-3.5 text-sm font-semibold text-left text-blue-100">Status Pesanan</th>
@@ -121,12 +122,12 @@
             </thead>
             <tbody class="bg-white divide-y divide-slate-100">
               <tr v-if="isLoading">
-                <td v-for="c in 10" :key="c" class="px-4 py-4">
+                <td v-for="c in 11" :key="c" class="px-4 py-4">
                   <div class="h-4 w-full max-w-[120px] animate-pulse rounded bg-slate-100"></div>
                 </td>
               </tr>
               <tr v-else-if="computedData.length === 0">
-                <td colspan="10" class="px-4 py-12 text-sm text-center text-slate-400 italic">Belum ada transaksi merchandise.</td>
+                <td colspan="11" class="px-4 py-12 text-sm text-center text-slate-400 italic">Belum ada transaksi merchandise.</td>
               </tr>
               <tr
                 v-else
@@ -149,6 +150,11 @@
                 <td class="px-4 py-4 align-middle">
                   <p class="max-w-[240px] text-slate-600 line-clamp-2" :title="u.address || '-'">
                     {{ u.address || '-' }}
+                  </p>
+                </td>
+                <td class="px-4 py-4 align-middle">
+                  <p class="max-w-[200px] text-slate-600 line-clamp-2" :title="u.notes || '-'">
+                    {{ u.notes || '-' }}
                   </p>
                 </td>
                 <td class="px-4 py-4 text-right align-middle whitespace-nowrap">
@@ -278,6 +284,7 @@ type Transaction = {
   email?: string;
   noTelp?: string;
   address?: string;
+  notes?: string;
   merchandiseId?: number;
   merchandises?: Merchandise;
   qty?: number;
