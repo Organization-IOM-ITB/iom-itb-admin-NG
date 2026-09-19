@@ -15,6 +15,7 @@ export const GET_TRANSACTIONS = "getTransactions";
 export const SET_TRANSACTIONS = "setTransactions";
 export const POST_TRANSACTION = "postTransaction";
 export const PUT_TRANSACTION = "putTransaction";
+export const CONFIRM_TRANSACTION_PAYMENT = "confirmTransactionPayment";
 export const DELETE_TRANSACTION = "deleteTransaction";
 
 type TransactionListResponse = PaginatedData<Transaction>;
@@ -72,6 +73,15 @@ const actions = {
     [PUT_TRANSACTION](context: VuexContext, params: ApiActionParams<Partial<Transaction>>): Promise<Transaction[]> {
         return new Promise((resolve, reject) => {
             ApiService.put<ApiDataResponse<Transaction[]>>(`/transactions/${params.id}`, params.data || {})
+                .then(({ data }) => resolve(data))
+                .catch((err) => {
+                    reject(err);
+                });
+        });
+    },
+    [CONFIRM_TRANSACTION_PAYMENT](context: VuexContext, params: ApiActionParams): Promise<Transaction[]> {
+        return new Promise((resolve, reject) => {
+            ApiService.post<ApiDataResponse<Transaction[]>>(`/transactions/${params.id}/confirm-payment`, {})
                 .then(({ data }) => resolve(data))
                 .catch((err) => {
                     reject(err);

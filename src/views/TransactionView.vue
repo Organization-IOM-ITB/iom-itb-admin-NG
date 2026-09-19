@@ -170,6 +170,16 @@
                     <span :class="paymentStatusBadgeClass(u.paymentStatus)" class="inline-block px-2 py-0.5 text-xs font-medium rounded-full capitalize">
                       {{ paymentStatusLabel(u.paymentStatus) }}
                     </span>
+                    <br v-if="canConfirmPayment(u)" />
+                    <button
+                      v-if="canConfirmPayment(u)"
+                      type="button"
+                      :disabled="confirmingPayment[u.id]"
+                      class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      @click.prevent="confirmPayment(u)"
+                    >
+                      {{ confirmingPayment[u.id] ? 'Memproses...' : 'Konfirmasi Pembayaran' }}
+                    </button>
                   </div>
                 </td>
                 <td class="px-4 py-4 align-middle">
@@ -264,7 +274,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION } from '@/store/transaction.module';
+import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT } from '@/store/transaction.module';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
 import AppSelect from '@/components/input/AppSelect.vue';
 import { useStore } from 'vuex';
@@ -310,6 +320,7 @@ const isImageModalOpen = ref(false);
 const selectedImage = ref('');
 const statusDraft = ref<Record<number, string>>({});
 const savingStatus = ref<Record<number, boolean>>({});
+const confirmingPayment = ref<Record<number, boolean>>({});
 const orderStatusOptions = ['waiting', 'on process', 'on delivery', 'arrived', 'done', 'canceled', 'denied'];
 const notifyStatuses = new Set(['on process', 'on delivery', 'arrived', 'done', 'canceled', 'denied']);
 const orderStatusLabels: Record<string, string> = {
@@ -415,6 +426,45 @@ const closeImageModal = () => {
 };
 
 const isManualProof = (payment?: string | null) => Boolean(payment) && !String(payment).startsWith('midtrans:');
+
+const canConfirmPayment = (item: Transaction) => item.paymentMethod === 'manual' && item.paymentStatus === 'pending';
+
+const confirmPayment = async (item: Transaction) => {
+  const confirmation = await Swal.fire({
+    title: 'Konfirmasi pembayaran?',
+    text: 'Pastikan Anda sudah memeriksa bukti transfer sebelum konfirmasi. Pembeli akan menerima notifikasi Email dan WhatsApp.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, sudah saya periksa',
+    cancelButtonText: 'Batal',
+  });
+
+  if (!confirmation.isConfirmed) return;
+
+  confirmingPayment.value[item.id] = true;
+
+  try {
+    await store.dispatch(CONFIRM_TRANSACTION_PAYMENT, { id: item.id });
+    await getData();
+    await Swal.fire({
+      title: 'Pembayaran dikonfirmasi',
+      text: 'Status pembayaran diperbarui menjadi Lunas.',
+      icon: 'success',
+      confirmButtonColor: '#4f46e5',
+    });
+  } catch (error) {
+    await Swal.fire({
+      title: 'Gagal konfirmasi pembayaran',
+      text: getErrorMessage(error),
+      icon: 'error',
+      confirmButtonColor: '#4f46e5',
+    });
+  } finally {
+    confirmingPayment.value[item.id] = false;
+  }
+};
 
 const merchandiseName = (transaction: Transaction) => {
   return transaction.merchandises?.name || `Merchandise #${transaction.merchandiseId || '-'}`;
