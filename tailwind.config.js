@@ -1,3 +1,8 @@
+// Warna brand berasal dari src/assets/iom-tokens.css (satu sumber kebenaran
+// yang disalin identik ke tiap repo UI IOM-ITB). Pola
+// rgb(var(--x) / <alpha-value>) menjaga modifier opacity Tailwind tetap jalan.
+const token = (name) => `rgb(var(--iom-${name}-rgb) / <alpha-value>)`;
+
 module.exports = {
   content: ['./public/**/*.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   presets: [],
@@ -38,6 +43,29 @@ module.exports = {
       fuchsia: colors.fuchsia,
       pink: colors.pink,
       rose: colors.rose,
+
+      // --- Palet brand IOM-ITB ---
+      // Semua nilai berasal dari src/assets/iom-tokens.css. Sebelumnya
+      // admin-NG sama sekali tidak punya warna brand, sehingga tampil
+      // memakai palet bawaan Tailwind.
+      primary: {
+        DEFAULT: token('primary'),
+        hover: token('primary-hover'),
+        deep: token('primary-deep'),
+      },
+      accent: { DEFAULT: token('accent'), dark: token('accent-dark') },
+      surface: {
+        DEFAULT: token('surface'),
+        subtle: token('surface-subtle'),
+        muted: token('surface-muted'),
+        brand: token('surface-brand'),
+      },
+      ink: token('ink'),
+      body: token('text'),
+      line: { DEFAULT: token('border'), brand: token('border-brand') },
+      success: token('success'),
+      danger: token('danger'),
+      warning: token('warning'),
     }),
     columns: {
       auto: 'auto',
@@ -344,9 +372,7 @@ module.exports = {
     },
     fontFamily: {
       sans: [
-        'Manrope',
-        'Geist',
-        'Inter',
+        'DM Sans',
         'ui-sans-serif',
         'system-ui',
         '-apple-system',
@@ -355,28 +381,12 @@ module.exports = {
         'Roboto',
         '"Helvetica Neue"',
         'Arial',
-        '"Noto Sans"',
         'sans-serif',
         '"Apple Color Emoji"',
         '"Segoe UI Emoji"',
-        '"Segoe UI Symbol"',
-        '"Noto Color Emoji"',
       ],
-      heading: [
-        '"Google Sans Flex"',
-        'Manrope',
-        'Geist',
-        'ui-sans-serif',
-        'system-ui',
-        'sans-serif',
-      ],
-      display: [
-        '"Google Sans Flex"',
-        'Manrope',
-        'ui-sans-serif',
-        'system-ui',
-        'sans-serif',
-      ],
+      heading: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      display: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       serif: ['ui-serif', 'Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
       mono: [
         'ui-monospace',

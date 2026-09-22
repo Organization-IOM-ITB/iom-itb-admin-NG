@@ -1,25 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import './iom-tokens.css';
 
 @tailwind base;
 
 @layer base {
   html {
-    font-family: 'Manrope', 'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--iom-font-sans);
+    background-color: var(--iom-bg);
+    color: var(--iom-text);
   }
 
+  /* DM Sans juga variable font, jadi font-variation-settings tetap
+     dipakai — hanya sumbu 'opsz' milik Google Sans Flex yang dilepas
+     karena DM Sans memakai rentang opsz 9..40. */
   h1 {
-    font-family: 'Google Sans Flex', 'Manrope', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 540;
-    font-variation-settings: 'opsz' 36, 'wght' 540;
-    letter-spacing: 0.014em;
+    font-family: var(--iom-font-heading);
+    font-weight: 600;
+    font-variation-settings: 'opsz' 40, 'wght' 600;
+    letter-spacing: -0.011em;
+    color: var(--iom-fg);
   }
 
   h2,
   h3 {
-    font-family: 'Google Sans Flex', 'Manrope', ui-sans-serif, system-ui, sans-serif;
-    font-weight: 520;
-    font-variation-settings: 'opsz' 32, 'wght' 520;
-    letter-spacing: 0.014em;
+    font-family: var(--iom-font-heading);
+    font-weight: 600;
+    font-variation-settings: 'opsz' 32, 'wght' 600;
+    letter-spacing: -0.008em;
+    color: var(--iom-fg);
   }
 
   select {
@@ -45,10 +53,7 @@
 
 @tailwind utilities;
 
-:root {
-  --iom-control-border: rgb(140 140 148);
-}
-
+/* --iom-control-border kini berasal dari iom-tokens.css */
 .iom-control-border,
 input:not([type]),
 input[type='date'],
@@ -62,11 +67,11 @@ input[type='url'],
 select,
 textarea {
   appearance: none;
-  background-color: #ffffff !important;
+  background-color: var(--iom-surface) !important;
   border-color: var(--iom-control-border) !important;
   border-style: solid !important;
   border-width: 1px !important;
-  border-radius: 8px !important;
+  border-radius: var(--iom-radius) !important;
 }
 
 .iom-control-border:focus,
@@ -89,13 +94,13 @@ textarea:focus {
 .swal2-popup.swal-error-popup {
   padding-top: 0 !important;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--iom-radius);
 }
 
 .swal2-popup.swal-error-popup::before {
   content: '';
   display: block;
-  background-color: #ef4444;
+  background-color: var(--iom-danger);
   height: 50px;
   width: 100%;
 }
@@ -127,18 +132,18 @@ textarea:focus {
 }
 
 .swal2-popup.swal-error-popup .swal2-title {
-  color: #ef4444 !important;
+  color: var(--iom-danger) !important;
   font-weight: 700 !important;
   padding-bottom: 0;
 }
 
 .swal2-popup.swal-error-popup .swal2-html-container {
-  color: #374151;
+  color: var(--iom-text);
   font-size: 0.95em;
   text-align: center;
 }
 
 /* Delete confirmation cancel button */
 .swal-cancel-btn {
-  color: #374151 !important;
+  color: var(--iom-text) !important;
 }
