@@ -13,12 +13,16 @@
   /* DM Sans juga variable font, jadi font-variation-settings tetap
      dipakai — hanya sumbu 'opsz' milik Google Sans Flex yang dilepas
      karena DM Sans memakai rentang opsz 9..40. */
+  /* Sengaja TIDAK menyetel `color` di sini. Deklarasi warna pada elemen
+     selalu mengalahkan nilai warisan, sehingga heading di dalam container
+     gelap (mis. banner `bg-[#003793] text-white` di MerchandiseDashboardView
+     dan TemplatePesanView) akan ikut menjadi gelap dan tidak terbaca.
+     Biarkan mewarisi supaya `text-white` induknya tetap berlaku. */
   h1 {
     font-family: var(--iom-font-heading);
     font-weight: 600;
     font-variation-settings: 'opsz' 40, 'wght' 600;
     letter-spacing: -0.011em;
-    color: var(--iom-fg);
   }
 
   h2,
@@ -27,7 +31,6 @@
     font-weight: 600;
     font-variation-settings: 'opsz' 32, 'wght' 600;
     letter-spacing: -0.008em;
-    color: var(--iom-fg);
   }
 
   select {
