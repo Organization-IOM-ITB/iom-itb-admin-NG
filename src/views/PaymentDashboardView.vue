@@ -89,7 +89,7 @@
           <div class="mt-4 space-y-3">
             <div v-for="item in statusSummary" :key="item.status">
               <div class="flex items-center justify-between text-sm">
-                <span class="font-medium capitalize text-slate-700">{{ item.status }}</span>
+                <span class="font-medium text-slate-700">{{ paymentStatusLabel(item.status) }}</span>
                 <span class="text-slate-500">{{ item.count }} transaksi</span>
               </div>
               <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -229,7 +229,7 @@
                   </td>
                   <td class="px-4 py-3">
                     <span class="rounded-full px-2 py-0.5 text-xs font-medium capitalize" :class="statusBadgeClass(item.paymentStatus)">
-                      {{ item.paymentStatus || 'pending' }}
+                      {{ paymentStatusLabel(item.paymentStatus) }}
                     </span>
                   </td>
                 </tr>
@@ -243,6 +243,7 @@
 </template>
 
 <script setup lang="ts">
+import { paymentStatusLabel } from '@/utils/statusLabels';
 import { isMidtransEnabled } from '@/utils/midtrans';
 import { computed, onMounted, ref } from 'vue';
 import { useStore } from 'vuex';

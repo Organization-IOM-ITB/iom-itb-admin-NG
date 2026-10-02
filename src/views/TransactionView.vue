@@ -303,6 +303,7 @@
 </template>
 
 <script setup lang="ts">
+import { paymentStatusLabel } from '@/utils/statusLabels';
 import { isMidtransEnabled } from '@/utils/midtrans';
 import { ref, computed, onMounted } from 'vue';
 import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT, EXPORT_TRANSACTIONS } from '@/store/transaction.module';
@@ -363,13 +364,6 @@ const orderStatusLabels: Record<string, string> = {
   done: 'Selesai',
   canceled: 'Dibatalkan',
   denied: 'Ditolak',
-};
-const paymentStatusLabels: Record<string, string> = {
-  pending: 'Menunggu',
-  settlement: 'Lunas',
-  expired: 'Kedaluwarsa',
-  failed: 'Gagal',
-  refunded: 'Dikembalikan',
 };
 const pageLimitOptions = [
   { value: 5, label: '5' },
@@ -524,7 +518,6 @@ const paymentMethodLabel = (method?: string) => {
   return '-';
 };
 
-const paymentStatusLabel = (status?: string) => paymentStatusLabels[status || 'pending'] || 'Menunggu';
 
 const methodBadgeClass = (method?: string) =>
   method === 'midtrans' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700';

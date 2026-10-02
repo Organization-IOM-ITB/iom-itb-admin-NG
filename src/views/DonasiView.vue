@@ -191,7 +191,7 @@
                 </td>
                 <td class="px-4 py-3 align-middle">
                   <span :class="statusBadgeClass(u.paymentStatus)" class="inline-block px-2 py-0.5 text-xs font-medium rounded-full capitalize">
-                    {{ u.paymentStatus || 'pending' }}
+                    {{ paymentStatusLabel(u.paymentStatus) }}
                   </span>
                 </td>
                 <td class="px-4 py-3 align-middle">
@@ -246,6 +246,7 @@
 </template>
 
 <script setup lang="ts">
+import { paymentStatusLabel } from '@/utils/statusLabels';
 import { isMidtransEnabled } from '@/utils/midtrans';
 import { ref, computed, onMounted } from 'vue';
 import { GET_DONASI } from '@/store/donasi.module';
