@@ -10,6 +10,7 @@ import pendataanAnggota from "./pendataanAnggota.module";
 import pengajuanBantuan from "./pengajuanBantuan.module";
 import orangtuaAsuh from "./orangtuaAsuh.module";
 import donasi from "./donasi.module";
+import donasiTally from "./donasiTally.module";
 import fakultas from "./fakultas.module";
 import appSelector from "./appSelector.module";
 import kegiatanKemitraan from "./kegiatanKemitraan.module";
@@ -31,6 +32,7 @@ export default createStore({
     pengajuanBantuan,
     orangtuaAsuh,
     donasi,
+    donasiTally,
     fakultas,
     appSelector,
     kegiatanKemitraan,

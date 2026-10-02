@@ -51,6 +51,24 @@
         </div>
       </section>
 
+      <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="tablist">
+        <button
+          v-for="tab in tabs"
+          :key="tab.value"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === tab.value"
+          class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+          :class="activeTab === tab.value ? 'bg-[#003793] text-white' : 'text-slate-600 hover:bg-slate-100'"
+          @click="activeTab = tab.value"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <DonasiTallySection v-if="activeTab === 'konfirmasi'" />
+
+      <template v-else>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div>
@@ -217,6 +235,7 @@
           </div>
         </div>
       </div>
+      </template>
     </div>
   </div>
 </template>
@@ -232,6 +251,7 @@ import { useStore } from 'vuex';
 import { formatDate } from '@/utils';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
 import AppSelect from '@/components/input/AppSelect.vue';
+import DonasiTallySection from '@/components/DonasiTallySection.vue';
 
 interface DonationRow {
   id?: string | number;
@@ -268,6 +288,14 @@ const donationType = ref('');
 const isImageModalOpen = ref(false);
 const selectedImage = ref('');
 const title = ref('Donasi');
+
+// Selama pembayaran otomatis nonaktif, donasi baru datang lewat form Tally —
+// jadi tab konfirmasi transfer yang dibuka lebih dulu.
+const tabs = [
+  { value: 'konfirmasi', label: 'Konfirmasi Transfer (Form)' },
+  { value: 'catatan', label: 'Catatan Donasi' },
+] as const;
+const activeTab = ref<'konfirmasi' | 'catatan'>('konfirmasi');
 
 const isOpened = ref(false);
 const currentId = ref<string | undefined>(undefined);
