@@ -172,8 +172,13 @@
                 <td class="px-4 py-3 text-gray-700 align-middle whitespace-nowrap">{{ formatDate(u.date || u.createdAt) }}</td>
                 <td class="px-4 py-3 align-middle">
                   <p class="font-medium text-gray-900 whitespace-nowrap">{{ u.name || '-' }}</p>
-                  <p v-if="u.email" class="text-xs text-gray-500 whitespace-nowrap">{{ u.email }}</p>
-                  <p v-if="u.noWhatsapp" class="text-xs text-gray-500 whitespace-nowrap">{{ u.noWhatsapp }}</p>
+                  <p v-if="isRecordedContact(u.email)" class="text-xs text-gray-500 whitespace-nowrap">{{ u.email }}</p>
+                  <p v-if="isRecordedContact(u.noWhatsapp)" class="text-xs text-gray-500 whitespace-nowrap">{{ u.noWhatsapp }}</p>
+                  <p
+                    v-if="!isRecordedContact(u.email) && !isRecordedContact(u.noWhatsapp)"
+                    class="text-xs italic text-gray-400 whitespace-nowrap"
+                    title="Kontak donatur tidak dicatat (placeholder dari data lama)"
+                  >— kontak tidak dicatat</p>
                 </td>
                 <td class="px-4 py-3 text-gray-700 align-middle">{{ formatDonationType(u.donationType) }}</td>
                 <td class="px-4 py-3 text-gray-700 align-middle whitespace-nowrap">{{ u.faculty?.name || '-' }}</td>
@@ -405,6 +410,12 @@ const kpiCards = computed(() => [
     description: 'Akumulasi nominal yang sedang tampil',
   },
 ]);
+
+// Donasi lama (v1) diisi admin dengan placeholder bila kontak tidak diketahui:
+// 394 dari 633 email dan 597 WA bernilai "000". Nilai yang hanya berisi
+// 0, "-", ".", "_" atau spasi dianggap tidak dicatat; datanya tidak diubah.
+const isRecordedContact = (value?: string | null) =>
+  Boolean(value) && !/^[\s0._-]*$/.test(String(value));
 
 const formatDonationType = (t?: string) => {
   if (!t) return '-';
