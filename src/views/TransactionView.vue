@@ -102,6 +102,36 @@
           </div>
       </section>
 
+      <section class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-slate-500">
+          Export mencakup semua transaksi yang cocok dengan filter di atas, bukan hanya halaman ini.
+        </p>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            :disabled="exporting !== null"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="exportTransactions('csv')"
+          >
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+            </svg>
+            {{ exporting === 'csv' ? 'Menyiapkan...' : 'Export CSV' }}
+          </button>
+          <button
+            type="button"
+            :disabled="exporting !== null"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-green-700 px-3.5 py-2 text-sm font-semibold text-white transition-all hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="exportTransactions('xlsx')"
+          >
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+            </svg>
+            {{ exporting === 'xlsx' ? 'Menyiapkan...' : 'Export Excel' }}
+          </button>
+        </div>
+      </section>
+
       <div class="overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
@@ -274,9 +304,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT } from '@/store/transaction.module';
+import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT, EXPORT_TRANSACTIONS } from '@/store/transaction.module';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
 import AppSelect from '@/components/input/AppSelect.vue';
+import { downloadCsv, downloadXlsx, timestampForFileName, type ExportColumn } from '@/utils/tableExport';
 import { useStore } from 'vuex';
 import Swal from 'sweetalert2';
 
@@ -379,6 +410,13 @@ const startNumber = computed(() => pagination.value?.start || 1);
 const paidCount = computed(() => computedData.value.filter((item) => item.paymentStatus === 'settlement').length);
 const needProcessCount = computed(() => computedData.value.filter((item) => ['waiting', 'on process'].includes(item.status)).length);
 
+const activeFilters = () => ({
+  search: search.value || undefined,
+  paymentMethod: paymentMethod.value || undefined,
+  paymentStatus: paymentStatus.value || undefined,
+  status: orderStatus.value || undefined,
+});
+
 const getData = async () => {
   isLoading.value = true;
 
@@ -387,10 +425,7 @@ const getData = async () => {
       data: {
         page: page.value,
         limit: limit.value,
-        search: search.value || undefined,
-        paymentMethod: paymentMethod.value || undefined,
-        paymentStatus: paymentStatus.value || undefined,
-        status: orderStatus.value || undefined,
+        ...activeFilters(),
       },
     });
 
@@ -653,6 +688,74 @@ const saveStatus = async (item: Transaction) => {
     });
   } finally {
     savingStatus.value[item.id] = false;
+  }
+};
+
+const toDate = (value?: string) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const toAmount = (value?: number | string | null) => {
+  if (value == null || value === '') return null;
+  const amount = Number(value);
+  return Number.isNaN(amount) ? null : amount;
+};
+
+const exportColumns: ExportColumn<Transaction>[] = [
+  { header: 'No', value: (_row, index) => index + 1, width: 6 },
+  { header: 'Kode Pesanan', value: (row) => row.code, width: 18 },
+  { header: 'Tanggal Pesan', value: (row) => toDate(row.createdAt), width: 18, format: 'dd/mm/yyyy hh:mm' },
+  { header: 'Terakhir Diperbarui', value: (row) => toDate(row.updatedAt), width: 18, format: 'dd/mm/yyyy hh:mm' },
+  { header: 'Nama Pembeli', value: (row) => row.username, width: 24 },
+  { header: 'Email', value: (row) => row.email, width: 28 },
+  { header: 'No. Telepon', value: (row) => row.noTelp, width: 16 },
+  { header: 'Alamat', value: (row) => row.address, width: 40 },
+  { header: 'Merchandise', value: (row) => merchandiseName(row), width: 28 },
+  { header: 'Qty', value: (row) => row.qty ?? null, width: 6 },
+  { header: 'Total (Rp)', value: (row) => toAmount(row.grossAmount), width: 14, format: '#,##0' },
+  { header: 'Metode Bayar', value: (row) => paymentMethodLabel(row.paymentMethod), width: 14 },
+  { header: 'Status Bayar', value: (row) => paymentStatusLabel(row.paymentStatus), width: 14 },
+  { header: 'Status Pesanan', value: (row) => formatStatus(row.status), width: 16 },
+  { header: 'Catatan', value: (row) => row.notes, width: 32 },
+  { header: 'Bukti Bayar', value: (row) => (isManualProof(row.payment) ? row.payment : null), width: 40 },
+  { header: 'Link Status Pesanan', value: (row) => trackingUrl(row) || null, width: 40 },
+];
+
+const exporting = ref<'csv' | 'xlsx' | null>(null);
+
+const exportTransactions = async (format: 'csv' | 'xlsx') => {
+  exporting.value = format;
+
+  try {
+    const rows: Transaction[] = await store.dispatch(EXPORT_TRANSACTIONS, { data: activeFilters() });
+
+    if (rows.length === 0) {
+      await Swal.fire({
+        title: 'Tidak ada data',
+        text: 'Tidak ada transaksi yang cocok dengan filter saat ini.',
+        icon: 'info',
+        confirmButtonColor: '#4f46e5',
+      });
+      return;
+    }
+
+    const baseName = `transaksi-merchandise-${timestampForFileName()}`;
+    if (format === 'csv') {
+      downloadCsv(`${baseName}.csv`, exportColumns, rows);
+    } else {
+      await downloadXlsx(`${baseName}.xlsx`, 'Transaksi Merchandise', exportColumns, rows);
+    }
+  } catch (error) {
+    await Swal.fire({
+      title: 'Gagal export',
+      text: getErrorMessage(error),
+      icon: 'error',
+      confirmButtonColor: '#4f46e5',
+    });
+  } finally {
+    exporting.value = null;
   }
 };
 

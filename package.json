@@ -42,6 +42,7 @@
     "vuex": "^4.0.2",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4",
+    "write-excel-file": "^4.1.1",
     "yarn": "^1.22.22"
   },
   "devDependencies": {

@@ -17,8 +17,15 @@ export const POST_TRANSACTION = "postTransaction";
 export const PUT_TRANSACTION = "putTransaction";
 export const CONFIRM_TRANSACTION_PAYMENT = "confirmTransactionPayment";
 export const DELETE_TRANSACTION = "deleteTransaction";
+export const EXPORT_TRANSACTIONS = "exportTransactions";
 
 type TransactionListResponse = PaginatedData<Transaction>;
+
+// Ukuran halaman saat export: cukup besar agar sedikit request, cukup kecil
+// agar satu response tetap ringan. Batas halaman mencegah loop tanpa akhir
+// kalau API mengembalikan pagination yang tidak konsisten.
+const EXPORT_PAGE_SIZE = 200;
+const EXPORT_MAX_PAGES = 500;
 
 // Define type for state
 interface State {
@@ -58,6 +65,27 @@ const actions = {
                     reject(err);
                 });
         });
+    },
+    // Ambil SEMUA transaksi yang cocok dengan filter, lintas halaman, tanpa
+    // commit ke state — tabel yang sedang tampil tidak ikut berubah.
+    async [EXPORT_TRANSACTIONS](_context: VuexContext, params: ApiActionParams = {}): Promise<Transaction[]> {
+        const filters = { ...(params.data || {}) } as Record<string, unknown>;
+        const rows: Transaction[] = [];
+
+        for (let page = 1; page <= EXPORT_MAX_PAGES; page += 1) {
+            const response = await ApiService.get<TransactionListResponse>("/transactions", {
+                ...filters,
+                page,
+                limit: EXPORT_PAGE_SIZE,
+            });
+            const batch = response.data || [];
+            rows.push(...batch);
+
+            const totalPages = response.pagination?.totalPages || 1;
+            if (batch.length < EXPORT_PAGE_SIZE || page >= totalPages) break;
+        }
+
+        return rows;
     },
     [POST_TRANSACTION](context: VuexContext, params: ApiActionParams<Partial<Transaction>>): Promise<Transaction[]> {
         return new Promise((resolve, reject) => {
