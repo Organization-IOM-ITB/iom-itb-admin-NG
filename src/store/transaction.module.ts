@@ -19,7 +19,13 @@ export const CONFIRM_TRANSACTION_PAYMENT = "confirmTransactionPayment";
 export const DELETE_TRANSACTION = "deleteTransaction";
 export const EXPORT_TRANSACTIONS = "exportTransactions";
 
-type TransactionListResponse = PaginatedData<Transaction>;
+// summary: total lintas halaman dengan filter yang sama (api-NG GetTransactions).
+export interface TransactionSummary {
+    settledCount?: number;
+    needProcessCount?: number;
+}
+
+type TransactionListResponse = PaginatedData<Transaction> & { summary?: TransactionSummary };
 
 // Ukuran halaman saat export: cukup besar agar sedikit request, cukup kecil
 // agar satu response tetap ringan. Batas halaman mencegah loop tanpa akhir
@@ -31,12 +37,14 @@ const EXPORT_MAX_PAGES = 500;
 interface State {
     transactions: Transaction[];
     transactionPagination: PaginationMeta;
+    transactionSummary: TransactionSummary;
 }
 
 // Define initial state
 const state: State = {
     transactions: [],
     transactionPagination: {},
+    transactionSummary: {},
 };
 
 // Define getters
@@ -46,6 +54,9 @@ const getters = {
     },
     transactionPagination(state: State): PaginationMeta {
         return state.transactionPagination;
+    },
+    transactionSummary(state: State): TransactionSummary {
+        return state.transactionSummary;
     },
 };
 
@@ -134,11 +145,13 @@ const mutations = {
         if (Array.isArray(response)) {
             state.transactions = response;
             state.transactionPagination = {};
+            state.transactionSummary = {};
             return;
         }
 
         state.transactions = response.data || [];
         state.transactionPagination = response.pagination || {};
+        state.transactionSummary = response.summary || {};
     },
 };
 

@@ -35,11 +35,13 @@
         </div>
         <div class="rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">Lunas</p>
-          <p class="mt-2 text-2xl font-bold text-green-700">{{ paidCount }}</p>
+          <p class="mt-2 text-2xl font-bold text-green-700">{{ paidCount }} / {{ summary.settledCount ?? '–' }}</p>
+          <p class="mt-1 text-xs text-slate-400">halaman ini / total</p>
         </div>
         <div class="rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">Perlu Diproses</p>
-          <p class="mt-2 text-2xl font-bold text-amber-700">{{ needProcessCount }}</p>
+          <p class="mt-2 text-2xl font-bold text-amber-700">{{ needProcessCount }} / {{ summary.needProcessCount ?? '–' }}</p>
+          <p class="mt-1 text-xs text-slate-400">halaman ini / total</p>
         </div>
         <div class="rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">Halaman</p>
@@ -306,7 +308,7 @@
 import { paymentStatusLabel } from '@/utils/statusLabels';
 import { isMidtransEnabled } from '@/utils/midtrans';
 import { ref, computed, onMounted } from 'vue';
-import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT, EXPORT_TRANSACTIONS } from '@/store/transaction.module';
+import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT, EXPORT_TRANSACTIONS, type TransactionSummary } from '@/store/transaction.module';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
 import AppSelect from '@/components/input/AppSelect.vue';
 import { downloadCsv, downloadXlsx, timestampForFileName, type ExportColumn } from '@/utils/tableExport';
@@ -401,6 +403,7 @@ const computedData = computed<Transaction[]>(() => {
 });
 
 const pagination = computed(() => store.getters.transactionPagination || {});
+const summary = computed<TransactionSummary>(() => store.getters.transactionSummary || {});
 const startNumber = computed(() => pagination.value?.start || 1);
 const paidCount = computed(() => computedData.value.filter((item) => item.paymentStatus === 'settlement').length);
 const needProcessCount = computed(() => computedData.value.filter((item) => ['waiting', 'on process'].includes(item.status)).length);
