@@ -169,7 +169,14 @@
                 class="transition-colors hover:bg-blue-50/40"
               >
                 <td class="px-4 py-3 text-gray-500 align-middle">{{ startNumber + index }}</td>
-                <td class="px-4 py-3 text-gray-700 align-middle whitespace-nowrap">{{ formatDate(u.date || u.createdAt) }}</td>
+                <td class="px-4 py-3 text-gray-700 align-middle whitespace-nowrap">
+                  {{ formatDate(u.date || u.createdAt) }}
+                  <span
+                    v-if="!u.date"
+                    class="block text-[11px] italic text-gray-400"
+                    title="Tanggal donasi tidak dicatat; yang tampil adalah tanggal data diinput"
+                  >tgl. input</span>
+                </td>
                 <td class="px-4 py-3 align-middle">
                   <p class="font-medium text-gray-900 whitespace-nowrap">{{ u.name || '-' }}</p>
                   <p v-if="isRecordedContact(u.email)" class="text-xs text-gray-500 whitespace-nowrap">{{ u.email }}</p>
@@ -183,7 +190,14 @@
                 <td class="px-4 py-3 text-gray-700 align-middle">{{ formatDonationType(u.donationType) }}</td>
                 <td class="px-4 py-3 text-gray-700 align-middle whitespace-nowrap">{{ u.faculty?.name || '-' }}</td>
                 <td class="px-4 py-3 font-mono text-xs text-gray-600 align-middle">{{ u.kodeUnik || u.faculty?.kodeUnik || '-' }}</td>
-                <td class="px-4 py-3 font-medium text-right text-gray-900 align-middle whitespace-nowrap">{{ formatNominal(u.grossAmount || u.amount) }}</td>
+                <td class="px-4 py-3 font-medium text-right text-gray-900 align-middle whitespace-nowrap">
+                  <template v-if="hasRecordedAmount(u)">{{ formatNominal(u.grossAmount || u.amount) }}</template>
+                  <span
+                    v-else
+                    class="text-xs font-normal italic text-gray-400"
+                    title="Nominal tidak dicatat (kosong atau 0 pada data lama)"
+                  >— tidak dicatat</span>
+                </td>
                 <td class="px-4 py-3 align-middle">
                   <span :class="methodBadgeClass(u.paymentMethod)" class="inline-block px-2 py-0.5 text-xs font-medium rounded-full capitalize">
                     {{ u.paymentMethod === 'midtrans' ? 'Midtrans' : 'Manual' }}
@@ -417,6 +431,10 @@ const kpiCards = computed(() => [
 // 0, "-", ".", "_" atau spasi dianggap tidak dicatat; datanya tidak diubah.
 const isRecordedContact = (value?: string | null) =>
   Boolean(value) && !/^[\s0._-]*$/.test(String(value));
+
+// 20 donasi lama (v1) tidak punya nominal: 9 kosong, 11 bernilai 0 (default
+// kolom v1). Ditandai, bukan ditampilkan "Rp 0" yang terbaca seperti nyata.
+const hasRecordedAmount = (item: DonationRow) => Number(item.grossAmount || item.amount || 0) > 0;
 
 const formatDonationType = (t?: string) => {
   if (!t) return '-';
