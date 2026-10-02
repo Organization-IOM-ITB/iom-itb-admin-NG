@@ -281,6 +281,7 @@
 </template>
 
 <script lang="ts">
+import { isMidtransEnabled } from '@/utils/midtrans';
 import { defineComponent, ref, computed, onMounted, watch, reactive } from 'vue';
 import { useStore } from 'vuex';
 import { POST_DONASI, PUT_DONASI } from '@/store/donasi.module';
@@ -348,9 +349,13 @@ export default defineComponent({
     ];
 
     const isEditMode = Boolean(props.id);
+    // Midtrans tetap muncul saat mengedit donasi yang memang dibayar via
+    // Midtrans, agar nilainya tidak berubah diam-diam saat disimpan.
     const paymentMethodOptions = [
       { value: 'manual', label: 'Manual' },
-      { value: 'midtrans', label: 'Midtrans' },
+      ...(isMidtransEnabled() || (isEditMode && initialData?.paymentMethod === 'midtrans')
+        ? [{ value: 'midtrans', label: 'Midtrans' }]
+        : []),
     ];
     const paymentStatusOptions = [
       { value: 'pending', label: 'Menunggu' },

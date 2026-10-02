@@ -20,6 +20,16 @@
         </div>
       </section>
 
+      <div
+        v-if="!midtransEnabled"
+        class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        Pembayaran online (Midtrans) sedang <span class="font-semibold">dinonaktifkan sementara</span>.
+        Dashboard ini memantau pembayaran iuran &amp; kontribusi sukarela, sehingga tidak akan ada
+        transaksi baru di sini sampai pembayaran online diaktifkan kembali. Donasi manual ada di menu
+        <span class="font-semibold">Donasi</span>.
+      </div>
+
       <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div>
@@ -233,6 +243,7 @@
 </template>
 
 <script setup lang="ts">
+import { isMidtransEnabled } from '@/utils/midtrans';
 import { computed, onMounted, ref } from 'vue';
 import { useStore } from 'vuex';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
@@ -274,6 +285,7 @@ const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
 const startDate = ref(toDateInput(start));
 const endDate = ref(toDateInput(today));
 
+const midtransEnabled = isMidtransEnabled();
 const dashboard = computed<PaymentDashboardData>(() => store.getters.paymentDashboard || {});
 const kpis = computed<PaymentDashboardKpis>(() => dashboard.value.kpis || {});
 const statusSummary = computed<PaymentSummaryItem[]>(() => dashboard.value.statusSummary || []);

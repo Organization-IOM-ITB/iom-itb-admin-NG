@@ -25,7 +25,7 @@
         <div class="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 class="text-2xl font-bold md:text-4xl">{{ title }}</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-blue-100">Donasi manual dan online Midtrans tercatat dalam satu daftar.</p>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-blue-100">{{ midtransEnabled ? 'Donasi manual dan online Midtrans tercatat dalam satu daftar.' : 'Donasi manual tercatat dalam satu daftar. Pembayaran online (Midtrans) sedang dinonaktifkan.' }}</p>
           </div>
           <div class="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
@@ -241,6 +241,7 @@
 </template>
 
 <script setup lang="ts">
+import { isMidtransEnabled } from '@/utils/midtrans';
 import { ref, computed, onMounted } from 'vue';
 import { GET_DONASI } from '@/store/donasi.module';
 import ModalForm from '@/components/modal/FormDonation.vue';
@@ -288,6 +289,7 @@ const donationType = ref('');
 const isImageModalOpen = ref(false);
 const selectedImage = ref('');
 const title = ref('Donasi');
+const midtransEnabled = isMidtransEnabled();
 
 // Selama pembayaran otomatis nonaktif, donasi baru datang lewat form Tally —
 // jadi tab konfirmasi transfer yang dibuka lebih dulu.
@@ -311,7 +313,7 @@ const pageLimitOptions = [
 const paymentMethodOptions = [
   { value: '', label: 'Semua' },
   { value: 'manual', label: 'Manual' },
-  { value: 'midtrans', label: 'Midtrans' },
+  ...(isMidtransEnabled() ? [{ value: 'midtrans', label: 'Midtrans' }] : []),
 ];
 const paymentStatusOptions = [
   { value: '', label: 'Semua' },

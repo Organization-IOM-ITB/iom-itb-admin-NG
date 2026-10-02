@@ -303,6 +303,7 @@
 </template>
 
 <script setup lang="ts">
+import { isMidtransEnabled } from '@/utils/midtrans';
 import { ref, computed, onMounted } from 'vue';
 import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACTION_PAYMENT, EXPORT_TRANSACTIONS } from '@/store/transaction.module';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
@@ -379,7 +380,7 @@ const pageLimitOptions = [
 const paymentMethodOptions = [
   { value: '', label: 'Semua' },
   { value: 'manual', label: 'Manual' },
-  { value: 'midtrans', label: 'Midtrans' },
+  ...(isMidtransEnabled() ? [{ value: 'midtrans', label: 'Midtrans' }] : []),
 ];
 const paymentStatusOptions = [
   { value: '', label: 'Semua' },
