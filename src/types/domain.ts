@@ -135,6 +135,17 @@ export interface KegiatanKemitraan {
 
 export type KegiatanKemitraanPayload = Partial<KegiatanKemitraan> | FormData;
 
+export interface MerchandiseOptionGroup {
+  name: string;
+  values: { label: string; extraPrice?: number }[];
+}
+
+export interface SelectedMerchandiseOption {
+  name: string;
+  value: string;
+  extraPrice?: number;
+}
+
 export interface Merchandise {
   id?: number;
   title?: string;
@@ -146,6 +157,7 @@ export interface Merchandise {
   image?: string | File | null;
   link?: string;
   kategori?: string;
+  options?: MerchandiseOptionGroup[] | null;
   totalTerjual?: number;
   totalPendapatan?: number;
   createdAt?: string;
@@ -180,6 +192,7 @@ export interface Transaction {
   grossAmount?: number | string | null;
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
+  selectedOptions?: SelectedMerchandiseOption[] | null;
   midtransOrderId?: string | null;
   midtransTransactionId?: string | null;
   paymentType?: string | null;

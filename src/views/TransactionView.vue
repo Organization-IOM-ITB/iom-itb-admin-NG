@@ -173,6 +173,9 @@
                   <p class="mt-0.5 text-xs text-slate-500 whitespace-nowrap">
                     {{ merchandiseName(u) }} x {{ u.qty || 0 }}
                   </p>
+                  <p v-if="optionsText(u)" class="mt-0.5 text-xs font-medium text-slate-700">
+                    {{ optionsText(u) }}
+                  </p>
                 </td>
                 <td class="px-4 py-4 align-middle">
                   <p class="font-medium text-slate-900 whitespace-nowrap">{{ u.username || '-' }}</p>
@@ -346,6 +349,7 @@ type Transaction = {
   grossAmount?: number | string | null;
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
+  selectedOptions?: { name: string; value: string; extraPrice?: number }[] | null;
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -510,6 +514,12 @@ const confirmPayment = async (item: Transaction) => {
 
 const merchandiseName = (transaction: Transaction) => {
   return transaction.merchandises?.name || `Merchandise #${transaction.merchandiseId || '-'}`;
+};
+
+// "Navy · Panjang · XL" — pilihan opsi pembeli (Warna/Lengan/Size).
+const optionsText = (transaction: Transaction) => {
+  const options = transaction.selectedOptions;
+  return Array.isArray(options) && options.length ? options.map((o) => o.value).join(' · ') : '';
 };
 
 const formatStatus = (status?: string) => {
@@ -719,6 +729,11 @@ const exportColumns: ExportColumn<Transaction>[] = [
   { header: 'No. Telepon', value: (row) => row.noTelp, width: 16 },
   { header: 'Alamat', value: (row) => row.address, width: 40 },
   { header: 'Merchandise', value: (row) => merchandiseName(row), width: 28 },
+  {
+    header: 'Pilihan',
+    value: (row) => (row.selectedOptions || []).map((o) => `${o.name}: ${o.value}`).join(', ') || null,
+    width: 30,
+  },
   { header: 'Qty', value: (row) => row.qty ?? null, width: 6 },
   { header: 'Ongkir (Rp)', value: (row) => toAmount(row.shippingCost), width: 12, format: '#,##0' },
   { header: 'Wilayah Ongkir', value: (row) => row.shippingZoneLabel || null, width: 24 },

@@ -91,6 +91,70 @@
 
               <div class="grid grid-cols-1 gap-3 px-5 py-3 md:grid-cols-[170px_1fr] md:items-start">
                 <div class="md:pt-2">
+                  <label class="text-sm font-semibold text-slate-900">Opsi Produk</label>
+                  <p class="mt-0.5 text-xs text-slate-400">Pilihan yang wajib dipilih pembeli (mis. Warna, Lengan, Size). Tambahan harga per pilihan opsional.</p>
+                </div>
+                <div class="space-y-3">
+                  <div
+                    v-for="(group, groupIndex) in optionGroups"
+                    :key="groupIndex"
+                    class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <div class="flex items-center gap-2">
+                      <input
+                        v-model="group.name"
+                        type="text"
+                        maxlength="60"
+                        class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8c8c94]/20 font-semibold"
+                        placeholder="Nama opsi, mis. Size"
+                      />
+                      <button type="button" class="shrink-0 rounded-lg px-2 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50" @click="removeOptionGroup(groupIndex)">
+                        Hapus opsi
+                      </button>
+                    </div>
+                    <div class="mt-2 space-y-2">
+                      <div v-for="(value, valueIndex) in group.values" :key="valueIndex" class="flex items-center gap-2">
+                        <input
+                          v-model="value.label"
+                          type="text"
+                          maxlength="60"
+                          class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8c8c94]/20"
+                          placeholder="Pilihan, mis. XL"
+                        />
+                        <input
+                          :value="formatCurrencyInput(value.extraPrice)"
+                          type="text"
+                          inputmode="numeric"
+                          class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8c8c94]/20 max-w-[150px]"
+                          placeholder="+Rp 0"
+                          title="Tambahan harga untuk pilihan ini"
+                          @input="onExtraPriceInput($event, value)"
+                        />
+                        <button type="button" class="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600" title="Hapus pilihan" @click="group.values.splice(valueIndex, 1)">
+                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                      </div>
+                      <button type="button" class="text-sm font-semibold text-blue-700 hover:underline" @click="group.values.push({ label: '', extraPrice: 0 })">
+                        + Tambah pilihan
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="addOptionGroup">
+                      + Tambah opsi
+                    </button>
+                    <button type="button" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100" @click="applyOptionTemplate('pakaian')">
+                      Template Pakaian (Warna, Lengan, Size)
+                    </button>
+                    <button type="button" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100" @click="applyOptionTemplate('warna')">
+                      Template Warna
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 px-5 py-3 md:grid-cols-[170px_1fr] md:items-start">
+                <div class="md:pt-2">
                   <label class="text-sm font-semibold text-slate-900">Deskripsi <span class="text-red-500">*</span></label>
                   <p class="mt-0.5 text-xs text-slate-400">Ringkasan produk untuk halaman publik.</p>
                 </div>
@@ -184,13 +248,45 @@ import { POST_IMAGE } from "@/store/upload.module";
 import { showError } from '@/utils/swal';
 import ApiService from '@/store/api.service';
 import AppSelect from '@/components/input/AppSelect.vue';
-import type { ApiDataResponse, ApiErrorResponse, MerchandisePayload } from '@/types/domain';
+import type { ApiDataResponse, ApiErrorResponse, MerchandiseOptionGroup, MerchandisePayload } from '@/types/domain';
 
 type CategoryResponse = ApiDataResponse<string[]> | string[];
 
 const MAX_IMAGE_SIZE_MB = 5;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png']);
+
+type EditableOptionGroup = { name: string; values: { label: string; extraPrice: number | '' }[] };
+
+// Template opsi; warna hanya contoh, sesuaikan per produk. Size XXL ke atas
+// +Rp 1.500 per tahap, lengan panjang +Rp 15.000.
+const OPTION_TEMPLATES: Record<string, EditableOptionGroup[]> = {
+  pakaian: [
+    { name: 'Warna', values: [{ label: 'Hitam', extraPrice: 0 }, { label: 'Putih', extraPrice: 0 }, { label: 'Navy', extraPrice: 0 }] },
+    { name: 'Lengan', values: [{ label: 'Pendek', extraPrice: 0 }, { label: 'Panjang', extraPrice: 15000 }] },
+    {
+      name: 'Size',
+      values: [
+        { label: 'S', extraPrice: 0 },
+        { label: 'M', extraPrice: 0 },
+        { label: 'L', extraPrice: 0 },
+        { label: 'XL', extraPrice: 0 },
+        { label: 'XXL', extraPrice: 1500 },
+        { label: '3XL', extraPrice: 3000 },
+        { label: '4XL', extraPrice: 4500 },
+      ],
+    },
+  ],
+  warna: [
+    { name: 'Warna', values: [{ label: 'Hitam', extraPrice: 0 }, { label: 'Putih', extraPrice: 0 }, { label: 'Navy', extraPrice: 0 }] },
+  ],
+};
+
+const cloneGroups = (groups: MerchandiseOptionGroup[] | EditableOptionGroup[] | null | undefined): EditableOptionGroup[] =>
+  (Array.isArray(groups) ? groups : []).map((group) => ({
+    name: String(group.name || ''),
+    values: (group.values || []).map((value) => ({ label: String(value.label || ''), extraPrice: Number(value.extraPrice || 0) })),
+  }));
 
 export default defineComponent({
   components: {
@@ -220,6 +316,32 @@ export default defineComponent({
       id: '',
       data: { ...initialData } as MerchandisePayload,
     });
+
+    const optionGroups = ref<EditableOptionGroup[]>(cloneGroups(initialData.options));
+
+    const addOptionGroup = () => {
+      optionGroups.value.push({ name: '', values: [{ label: '', extraPrice: 0 }] });
+    };
+
+    const removeOptionGroup = (index: number) => {
+      optionGroups.value.splice(index, 1);
+    };
+
+    // Opsi dengan nama sama diganti isinya dari template, opsi lain dibiarkan.
+    const applyOptionTemplate = (key: string) => {
+      for (const group of cloneGroups(OPTION_TEMPLATES[key])) {
+        const existing = optionGroups.value.findIndex((g) => g.name.trim().toLowerCase() === group.name.toLowerCase());
+        if (existing >= 0) optionGroups.value.splice(existing, 1, group);
+        else optionGroups.value.push(group);
+      }
+    };
+
+    const onExtraPriceInput = (event: Event, value: { extraPrice: number | '' }) => {
+      const input = event.target as HTMLInputElement;
+      const rawValue = input.value.replace(/\D/g, '');
+      value.extraPrice = rawValue ? Number(rawValue) : 0;
+      input.value = formatCurrencyInput(value.extraPrice);
+    };
 
     const kategoriOptions = ref<string[]>(['Stiker', 'Busana', 'ATK']);
     const selectedKategori = ref<string>(String(initialData.kategori || ''));
@@ -382,6 +504,21 @@ export default defineComponent({
         }
       }
 
+      // Baris kosong dibuang; validasi lengkap (nama ganda, dsb.) di server.
+      const cleanedOptions = optionGroups.value
+        .map((group) => ({
+          name: group.name.trim(),
+          values: group.values
+            .filter((value) => value.label.trim())
+            .map((value) => ({ label: value.label.trim(), extraPrice: Number(value.extraPrice || 0) })),
+        }))
+        .filter((group) => group.name || group.values.length);
+      for (const group of cleanedOptions) {
+        if (!group.name) errors.push('Nama opsi wajib diisi.');
+        else if (!group.values.length) errors.push(`Opsi "${group.name}" belum punya pilihan.`);
+      }
+      formData.data.options = cleanedOptions;
+
       if (errors.length > 0) {
         showError('Error', errors);
         isLoading.value = false;
@@ -431,6 +568,11 @@ export default defineComponent({
       onImageUrlInput,
       onImageFileChange,
       removeImage,
+      optionGroups,
+      addOptionGroup,
+      removeOptionGroup,
+      applyOptionTemplate,
+      onExtraPriceInput,
     };
   },
 });
