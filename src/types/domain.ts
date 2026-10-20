@@ -178,6 +178,8 @@ export interface Transaction {
   paymentMethod?: PaymentMethod | string;
   paymentStatus?: PaymentStatus | string;
   grossAmount?: number | string | null;
+  shippingCost?: number | string | null;
+  shippingZoneLabel?: string | null;
   midtransOrderId?: string | null;
   midtransTransactionId?: string | null;
   paymentType?: string | null;

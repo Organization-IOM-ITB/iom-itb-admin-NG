@@ -192,6 +192,13 @@
                 <td class="px-4 py-4 text-right align-middle whitespace-nowrap">
                   <p class="font-semibold text-slate-900">{{ formatNominal(u.grossAmount) }}</p>
                   <p class="text-xs text-slate-500">{{ u.qty || 0 }} item</p>
+                  <p
+                    v-if="u.shippingCost != null"
+                    class="text-xs text-slate-500"
+                    :title="u.shippingZoneLabel ? `Tarif ${u.shippingZoneLabel}` : undefined"
+                  >
+                    termasuk ongkir {{ formatNominal(u.shippingCost) }}
+                  </p>
                 </td>
                 <td class="px-4 py-4 align-middle">
                   <div class="space-y-1">
@@ -337,6 +344,8 @@ type Transaction = {
   paymentMethod?: string;
   paymentStatus?: string;
   grossAmount?: number | string | null;
+  shippingCost?: number | string | null;
+  shippingZoneLabel?: string | null;
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -711,6 +720,8 @@ const exportColumns: ExportColumn<Transaction>[] = [
   { header: 'Alamat', value: (row) => row.address, width: 40 },
   { header: 'Merchandise', value: (row) => merchandiseName(row), width: 28 },
   { header: 'Qty', value: (row) => row.qty ?? null, width: 6 },
+  { header: 'Ongkir (Rp)', value: (row) => toAmount(row.shippingCost), width: 12, format: '#,##0' },
+  { header: 'Wilayah Ongkir', value: (row) => row.shippingZoneLabel || null, width: 24 },
   { header: 'Total (Rp)', value: (row) => toAmount(row.grossAmount), width: 14, format: '#,##0' },
   { header: 'Metode Bayar', value: (row) => paymentMethodLabel(row.paymentMethod), width: 14 },
   { header: 'Status Bayar', value: (row) => paymentStatusLabel(row.paymentStatus), width: 14 },
