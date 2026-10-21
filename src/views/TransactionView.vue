@@ -202,7 +202,7 @@
                     class="text-xs text-slate-500"
                     :title="u.shippingZoneLabel ? `Tarif ${u.shippingZoneLabel}` : undefined"
                   >
-                    termasuk ongkir {{ formatNominal(u.shippingCost) }}
+                    termasuk ongkir {{ formatNominal(u.shippingCost) }}<span v-if="u.shippingBilledKg"> ({{ u.shippingBilledKg }} kg)</span>
                   </p>
                 </td>
                 <td class="px-4 py-4 align-middle">
@@ -353,6 +353,8 @@ type Transaction = {
   grossAmount?: number | string | null;
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
+  shippingWeight?: number | null;
+  shippingBilledKg?: number | null;
   selectedOptions?: { name: string; value: string; extraPrice?: number }[] | null;
   items?: TransactionItem[];
   status: string;
@@ -746,6 +748,13 @@ const exportColumns: ExportColumn<ExportRow>[] = [
   },
   { header: 'Ongkir (Rp)', value: (row) => (row.itemIndex === 0 ? toAmount(row.shippingCost) : null), width: 12, format: '#,##0' },
   { header: 'Wilayah Ongkir', value: (row) => (row.itemIndex === 0 ? row.shippingZoneLabel || null : null), width: 24 },
+  {
+    header: 'Berat Pesanan (g)',
+    value: (row) => (row.itemIndex === 0 ? row.shippingWeight ?? null : null),
+    width: 12,
+    format: '#,##0',
+  },
+  { header: 'Ongkir Ditagih (kg)', value: (row) => (row.itemIndex === 0 ? row.shippingBilledKg ?? null : null), width: 10 },
   { header: 'Total Pesanan (Rp)', value: (row) => (row.itemIndex === 0 ? toAmount(row.grossAmount) : null), width: 14, format: '#,##0' },
   { header: 'Metode Bayar', value: (row) => paymentMethodLabel(row.paymentMethod), width: 14 },
   { header: 'Status Bayar', value: (row) => paymentStatusLabel(row.paymentStatus), width: 14 },

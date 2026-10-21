@@ -68,6 +68,29 @@
 
               <div class="grid grid-cols-1 gap-3 px-5 py-3 md:grid-cols-[170px_1fr] md:items-center">
                 <div>
+                  <label class="text-sm font-semibold text-slate-900">Berat (gram)</label>
+                  <p class="mt-0.5 text-xs text-slate-400">Per pcs, termasuk kemasan. Untuk hitung ongkir.</p>
+                </div>
+                <div>
+                  <input
+                    v-model="formData.data.weight"
+                    type="number"
+                    min="1"
+                    max="30000"
+                    step="1"
+                    inputmode="numeric"
+                    class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8c8c94]/20 sm:max-w-[200px]"
+                    placeholder="mis. 250"
+                  />
+                  <p class="mt-1 text-xs text-slate-400">
+                    Perkiraan: kaos/jersey 250, hijab 200, agenda 450, tumbler 500, stiker/kartu 50.
+                    Kosong = dianggap 500 g. Ongkir = tarif wilayah 1 kg pertama + tarif per kg berikutnya.
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 px-5 py-3 md:grid-cols-[170px_1fr] md:items-center">
+                <div>
                   <label class="text-sm font-semibold text-slate-900">Kategori</label>
                   <p class="mt-0.5 text-xs text-slate-400">Kelompok produk untuk filter katalog.</p>
                 </div>
@@ -488,6 +511,18 @@ export default defineComponent({
         }
       } else {
         formData.data.hpp = 0;
+      }
+
+      const weightRaw = formData.data.weight;
+      if (weightRaw === undefined || weightRaw === null || weightRaw === '') {
+        formData.data.weight = '';
+      } else {
+        const weightValue = Number(weightRaw);
+        if (!Number.isInteger(weightValue) || weightValue < 1 || weightValue > 30000) {
+          errors.push('Berat harus bilangan bulat 1–30.000 gram.');
+        } else {
+          formData.data.weight = weightValue;
+        }
       }
 
       const link = typeof formData.data.link === 'string' ? formData.data.link : '';

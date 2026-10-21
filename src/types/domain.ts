@@ -169,6 +169,8 @@ export interface Merchandise {
   link?: string;
   kategori?: string;
   options?: MerchandiseOptionGroup[] | null;
+  /** Gram per pcs termasuk kemasan; null = default 500 g untuk ongkir. */
+  weight?: number | string | null;
   totalTerjual?: number;
   totalPendapatan?: number;
   createdAt?: string;
@@ -205,6 +207,8 @@ export interface Transaction {
   shippingZoneLabel?: string | null;
   selectedOptions?: SelectedMerchandiseOption[] | null;
   items?: TransactionItem[];
+  shippingWeight?: number | null;
+  shippingBilledKg?: number | null;
   midtransOrderId?: string | null;
   midtransTransactionId?: string | null;
   paymentType?: string | null;
