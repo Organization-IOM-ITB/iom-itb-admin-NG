@@ -358,6 +358,7 @@ const SAMPLE_VALUES: Record<string, string> = {
   merchandise_name:  'Kaos IOM ITB',
   merchandiseName:   'Kaos IOM ITB',
   qty:               '2',
+  items:             'Kaos IOM ITB (Size: L) x 2',
   order_status_url:  'https://iom-itb.ac.id/orders/ORD-2026-001',
   orderStatusUrl:    'https://iom-itb.ac.id/orders/ORD-2026-001',
   status:            'Dipanggil Wawancara',

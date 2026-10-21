@@ -116,6 +116,7 @@ import { GET_TRANSACTIONS } from '@/store/transaction.module';
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
 import AppSelect from '@/components/input/AppSelect.vue';
 import type { Merchandise, Transaction } from '@/types/domain';
+import { orderItems } from '@/utils/transactionItems';
 
 type TopMerchandise = Merchandise & {
   totalTerjual: number;
@@ -153,8 +154,18 @@ const filteredMerchIds = computed(() =>
   new Set(filteredMerchandises.value.map((m) => m.id).filter((id): id is number => typeof id === 'number'))
 );
 
-const filteredTransactions = computed(() =>
-  transactions.value.filter((t) => filteredMerchIds.value.has(t.merchandiseId) && t.paymentStatus === 'settlement')
+// Baris item dari pesanan lunas (satu pesanan bisa berisi beberapa produk).
+// Omzet memakai harga satuan saat pesan (termasuk tambahan harga opsi).
+const filteredLines = computed(() =>
+  transactions.value
+    .filter((t) => t.paymentStatus === 'settlement')
+    .flatMap((t) => orderItems(t))
+    .filter((item) => typeof item.merchandiseId === 'number' && filteredMerchIds.value.has(item.merchandiseId))
+    .map((item) => ({
+      merchandiseId: item.merchandiseId as number,
+      qty: Number(item.qty) || 0,
+      unitPrice: Number(item.unitPrice) || 0,
+    }))
 );
 
 const merchMap = computed<Map<number, Merchandise>>(() =>
@@ -166,20 +177,17 @@ const merchMap = computed<Map<number, Merchandise>>(() =>
 );
 
 const totalTerjual = computed(() =>
-  filteredTransactions.value.reduce((sum, t) => sum + (Number(t.qty) || 0), 0)
+  filteredLines.value.reduce((sum, line) => sum + line.qty, 0)
 );
 
 const totalPendapatan = computed(() =>
-  filteredTransactions.value.reduce((sum, t) => {
-    const merch = merchMap.value.get(t.merchandiseId);
-    return sum + (Number(t.qty) || 0) * (Number(merch?.price) || 0);
-  }, 0)
+  filteredLines.value.reduce((sum, line) => sum + line.qty * line.unitPrice, 0)
 );
 
 const totalHpp = computed(() =>
-  filteredTransactions.value.reduce((sum, t) => {
-    const merch = merchMap.value.get(t.merchandiseId);
-    return sum + (Number(t.qty) || 0) * (Number(merch?.hpp) || 0);
+  filteredLines.value.reduce((sum, line) => {
+    const merch = merchMap.value.get(line.merchandiseId);
+    return sum + line.qty * (Number(merch?.hpp) || 0);
   }, 0)
 );
 
@@ -204,12 +212,12 @@ const chartSeries = computed(() => {
   const profit: Record<string, number> = {};
   allKategori.value.forEach((k) => (revenue[k] = 0));
   allKategori.value.forEach((k) => (profit[k] = 0));
-  filteredTransactions.value.forEach((t) => {
-    const merch = merchMap.value.get(t.merchandiseId);
+  filteredLines.value.forEach((line) => {
+    const merch = merchMap.value.get(line.merchandiseId);
     const kat = merch?.kategori;
     if (kat && revenue[kat] !== undefined) {
-      const qty = Number(t.qty) || 0;
-      const omzet = qty * (Number(merch?.price) || 0);
+      const qty = line.qty;
+      const omzet = qty * line.unitPrice;
       const hpp = qty * (Number(merch?.hpp) || 0);
       revenue[kat] += omzet;
       profit[kat] += omzet - hpp;
@@ -223,14 +231,13 @@ const chartSeries = computed(() => {
 
 const top10 = computed<TopMerchandise[]>(() => {
   const tally: Record<number, { totalTerjual: number; totalPendapatan: number; totalHpp: number }> = {};
-  filteredTransactions.value.forEach((t) => {
-    const id = t.merchandiseId;
-    if (typeof id !== 'number') return;
+  filteredLines.value.forEach((line) => {
+    const id = line.merchandiseId;
     if (!tally[id]) tally[id] = { totalTerjual: 0, totalPendapatan: 0, totalHpp: 0 };
     const merch = merchMap.value.get(id);
-    const qty = Number(t.qty) || 0;
+    const qty = line.qty;
     tally[id].totalTerjual += qty;
-    tally[id].totalPendapatan += qty * (Number(merch?.price) || 0);
+    tally[id].totalPendapatan += qty * line.unitPrice;
     tally[id].totalHpp += qty * (Number(merch?.hpp) || 0);
   });
   return Object.entries(tally)

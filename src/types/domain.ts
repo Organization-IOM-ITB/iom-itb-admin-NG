@@ -146,6 +146,17 @@ export interface SelectedMerchandiseOption {
   extraPrice?: number;
 }
 
+// Satu baris produk dalam pesanan (keranjang). Harga & nama = snapshot saat pesan.
+export interface TransactionItem {
+  id?: number | null;
+  merchandiseId?: number | null;
+  merchandiseName?: string;
+  unitPrice?: number | string;
+  qty: number;
+  selectedOptions?: SelectedMerchandiseOption[] | null;
+  merchandise?: { id?: number; name?: string; image?: string } | null;
+}
+
 export interface Merchandise {
   id?: number;
   title?: string;
@@ -193,6 +204,7 @@ export interface Transaction {
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
   selectedOptions?: SelectedMerchandiseOption[] | null;
+  items?: TransactionItem[];
   midtransOrderId?: string | null;
   midtransTransactionId?: string | null;
   paymentType?: string | null;

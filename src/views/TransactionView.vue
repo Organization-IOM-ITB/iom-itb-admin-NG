@@ -170,12 +170,14 @@
                 <td class="px-4 py-4 text-slate-500 align-middle">{{ startNumber + index }}</td>
                 <td class="px-4 py-4 align-middle">
                   <p class="font-semibold text-slate-900 whitespace-nowrap">{{ u.code || '-' }}</p>
-                  <p class="mt-0.5 text-xs text-slate-500 whitespace-nowrap">
-                    {{ merchandiseName(u) }} x {{ u.qty || 0 }}
-                  </p>
-                  <p v-if="optionsText(u)" class="mt-0.5 text-xs font-medium text-slate-700">
-                    {{ optionsText(u) }}
-                  </p>
+                  <ul class="mt-0.5 space-y-0.5">
+                    <li v-for="(item, itemIndex) in orderItems(u)" :key="itemIndex" class="text-xs">
+                      <span class="text-slate-500 whitespace-nowrap">{{ itemName(item) }} x {{ item.qty || 0 }}</span>
+                      <span v-if="itemOptionsValues(item)" class="block font-medium text-slate-700">
+                        {{ itemOptionsValues(item) }}
+                      </span>
+                    </li>
+                  </ul>
                 </td>
                 <td class="px-4 py-4 align-middle">
                   <p class="font-medium text-slate-900 whitespace-nowrap">{{ u.username || '-' }}</p>
@@ -194,7 +196,7 @@
                 </td>
                 <td class="px-4 py-4 text-right align-middle whitespace-nowrap">
                   <p class="font-semibold text-slate-900">{{ formatNominal(u.grossAmount) }}</p>
-                  <p class="text-xs text-slate-500">{{ u.qty || 0 }} item</p>
+                  <p class="text-xs text-slate-500">{{ orderTotalQty(u) }} pcs<span v-if="orderItems(u).length > 1"> · {{ orderItems(u).length }} produk</span></p>
                   <p
                     v-if="u.shippingCost != null"
                     class="text-xs text-slate-500"
@@ -322,6 +324,8 @@ import { GET_TRANSACTIONS, DELETE_TRANSACTION, PUT_TRANSACTION, CONFIRM_TRANSACT
 import Breadcrumb from '@/components/AppBreadcrumb.vue';
 import AppSelect from '@/components/input/AppSelect.vue';
 import { downloadCsv, downloadXlsx, timestampForFileName, type ExportColumn } from '@/utils/tableExport';
+import { orderItems, itemName, itemOptionsValues, itemOptionsText, orderTotalQty } from '@/utils/transactionItems';
+import type { TransactionItem } from '@/types/domain';
 import { useStore } from 'vuex';
 import Swal from 'sweetalert2';
 
@@ -350,6 +354,7 @@ type Transaction = {
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
   selectedOptions?: { name: string; value: string; extraPrice?: number }[] | null;
+  items?: TransactionItem[];
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -510,16 +515,6 @@ const confirmPayment = async (item: Transaction) => {
   } finally {
     confirmingPayment.value[item.id] = false;
   }
-};
-
-const merchandiseName = (transaction: Transaction) => {
-  return transaction.merchandises?.name || `Merchandise #${transaction.merchandiseId || '-'}`;
-};
-
-// "Navy · Panjang · XL" — pilihan opsi pembeli (Warna/Lengan/Size).
-const optionsText = (transaction: Transaction) => {
-  const options = transaction.selectedOptions;
-  return Array.isArray(options) && options.length ? options.map((o) => o.value).join(' · ') : '';
 };
 
 const formatStatus = (status?: string) => {
@@ -719,7 +714,17 @@ const toAmount = (value?: number | string | null) => {
   return Number.isNaN(amount) ? null : amount;
 };
 
-const exportColumns: ExportColumn<Transaction>[] = [
+// Ekspor: satu baris per item pesanan (mudah direkap per produk/ukuran untuk
+// vendor). Ongkir & Total hanya di baris pertama tiap pesanan agar SUM tidak dobel.
+type ExportRow = Transaction & { item: TransactionItem; itemIndex: number; itemCount: number };
+
+const toExportRows = (rows: Transaction[]): ExportRow[] =>
+  rows.flatMap((row) => {
+    const items = orderItems(row);
+    return items.map((item, itemIndex) => ({ ...row, item, itemIndex, itemCount: items.length }));
+  });
+
+const exportColumns: ExportColumn<ExportRow>[] = [
   { header: 'No', value: (_row, index) => index + 1, width: 6 },
   { header: 'Kode Pesanan', value: (row) => row.code, width: 18 },
   { header: 'Tanggal Pesan', value: (row) => toDate(row.createdAt), width: 18, format: 'dd/mm/yyyy hh:mm' },
@@ -728,16 +733,20 @@ const exportColumns: ExportColumn<Transaction>[] = [
   { header: 'Email', value: (row) => row.email, width: 28 },
   { header: 'No. Telepon', value: (row) => row.noTelp, width: 16 },
   { header: 'Alamat', value: (row) => row.address, width: 40 },
-  { header: 'Merchandise', value: (row) => merchandiseName(row), width: 28 },
+  { header: 'Item', value: (row) => `${row.itemIndex + 1}/${row.itemCount}`, width: 6 },
+  { header: 'Merchandise', value: (row) => itemName(row.item), width: 28 },
+  { header: 'Pilihan', value: (row) => itemOptionsText(row.item) || null, width: 30 },
+  { header: 'Qty', value: (row) => row.item.qty ?? null, width: 6 },
+  { header: 'Harga Satuan (Rp)', value: (row) => toAmount(row.item.unitPrice), width: 14, format: '#,##0' },
   {
-    header: 'Pilihan',
-    value: (row) => (row.selectedOptions || []).map((o) => `${o.name}: ${o.value}`).join(', ') || null,
-    width: 30,
+    header: 'Subtotal Item (Rp)',
+    value: (row) => toAmount(Number(row.item.unitPrice || 0) * (Number(row.item.qty) || 0)),
+    width: 14,
+    format: '#,##0',
   },
-  { header: 'Qty', value: (row) => row.qty ?? null, width: 6 },
-  { header: 'Ongkir (Rp)', value: (row) => toAmount(row.shippingCost), width: 12, format: '#,##0' },
-  { header: 'Wilayah Ongkir', value: (row) => row.shippingZoneLabel || null, width: 24 },
-  { header: 'Total (Rp)', value: (row) => toAmount(row.grossAmount), width: 14, format: '#,##0' },
+  { header: 'Ongkir (Rp)', value: (row) => (row.itemIndex === 0 ? toAmount(row.shippingCost) : null), width: 12, format: '#,##0' },
+  { header: 'Wilayah Ongkir', value: (row) => (row.itemIndex === 0 ? row.shippingZoneLabel || null : null), width: 24 },
+  { header: 'Total Pesanan (Rp)', value: (row) => (row.itemIndex === 0 ? toAmount(row.grossAmount) : null), width: 14, format: '#,##0' },
   { header: 'Metode Bayar', value: (row) => paymentMethodLabel(row.paymentMethod), width: 14 },
   { header: 'Status Bayar', value: (row) => paymentStatusLabel(row.paymentStatus), width: 14 },
   { header: 'Status Pesanan', value: (row) => formatStatus(row.status), width: 16 },
@@ -765,10 +774,11 @@ const exportTransactions = async (format: 'csv' | 'xlsx') => {
     }
 
     const baseName = `transaksi-merchandise-${timestampForFileName()}`;
+    const exportRows = toExportRows(rows);
     if (format === 'csv') {
-      downloadCsv(`${baseName}.csv`, exportColumns, rows);
+      downloadCsv(`${baseName}.csv`, exportColumns, exportRows);
     } else {
-      await downloadXlsx(`${baseName}.xlsx`, 'Transaksi Merchandise', exportColumns, rows);
+      await downloadXlsx(`${baseName}.xlsx`, 'Transaksi Merchandise', exportColumns, exportRows);
     }
   } catch (error) {
     await Swal.fire({
