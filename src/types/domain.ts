@@ -205,6 +205,10 @@ export interface Transaction {
   grossAmount?: number | string | null;
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
+  /** 'rajaongkir' | 'agenwebsite' | 'table' (tabel zona) */
+  shippingProvider?: string | null;
+  shippingService?: string | null;
+  shippingPostalCode?: string | null;
   selectedOptions?: SelectedMerchandiseOption[] | null;
   items?: TransactionItem[];
   shippingWeight?: number | null;

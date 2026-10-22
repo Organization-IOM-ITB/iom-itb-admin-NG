@@ -200,7 +200,7 @@
                   <p
                     v-if="u.shippingCost != null"
                     class="text-xs text-slate-500"
-                    :title="u.shippingZoneLabel ? `Tarif ${u.shippingZoneLabel}` : undefined"
+                    :title="shippingTitle(u)"
                   >
                     termasuk ongkir {{ formatNominal(u.shippingCost) }}<span v-if="u.shippingBilledKg"> ({{ u.shippingBilledKg }} kg)</span>
                   </p>
@@ -353,6 +353,8 @@ type Transaction = {
   grossAmount?: number | string | null;
   shippingCost?: number | string | null;
   shippingZoneLabel?: string | null;
+  shippingProvider?: string | null;
+  shippingPostalCode?: string | null;
   shippingWeight?: number | null;
   shippingBilledKg?: number | null;
   selectedOptions?: { name: string; value: string; extraPrice?: number }[] | null;
@@ -529,6 +531,23 @@ const formatNominal = (amount?: number | string | null) => {
   const value = Number(amount);
   if (Number.isNaN(value)) return String(amount);
   return `Rp ${value.toLocaleString('id-ID')}`;
+};
+
+const shippingProviderLabels: Record<string, string> = {
+  rajaongkir: 'RajaOngkir',
+  agenwebsite: 'AgenWebsite',
+  table: 'Tabel zona',
+};
+
+const shippingProviderLabel = (provider?: string | null) => (provider ? shippingProviderLabels[provider] || provider : null);
+
+const shippingTitle = (u: Transaction) => {
+  const parts = [
+    u.shippingZoneLabel,
+    shippingProviderLabel(u.shippingProvider) && `via ${shippingProviderLabel(u.shippingProvider)}`,
+    u.shippingPostalCode && `kode pos ${u.shippingPostalCode}`,
+  ].filter(Boolean);
+  return parts.length ? `Ongkir: ${parts.join(', ')}` : undefined;
 };
 
 const paymentMethodLabel = (method?: string) => {
@@ -747,7 +766,9 @@ const exportColumns: ExportColumn<ExportRow>[] = [
     format: '#,##0',
   },
   { header: 'Ongkir (Rp)', value: (row) => (row.itemIndex === 0 ? toAmount(row.shippingCost) : null), width: 12, format: '#,##0' },
-  { header: 'Wilayah Ongkir', value: (row) => (row.itemIndex === 0 ? row.shippingZoneLabel || null : null), width: 24 },
+  { header: 'Wilayah/Layanan Ongkir', value: (row) => (row.itemIndex === 0 ? row.shippingZoneLabel || null : null), width: 24 },
+  { header: 'Sumber Ongkir', value: (row) => (row.itemIndex === 0 ? shippingProviderLabel(row.shippingProvider) : null), width: 14 },
+  { header: 'Kode Pos', value: (row) => (row.itemIndex === 0 ? row.shippingPostalCode || null : null), width: 10 },
   {
     header: 'Berat Pesanan (g)',
     value: (row) => (row.itemIndex === 0 ? row.shippingWeight ?? null : null),
